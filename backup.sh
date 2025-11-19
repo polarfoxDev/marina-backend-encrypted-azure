@@ -33,43 +33,20 @@ cd /backup/$(ls /backup) || {
 
 echo "Starting backup process..."
 
-# run encryption per object in the current directory
-for file in *; do
-    if [ -f "$file" ]; then
-        defaultEncryptionPasswordVariable=ENCRYPTION_PASSWORD_${MARINA_INSTANCE_ID}__
-        defaultEncryptionPasswordVariable=${defaultEncryptionPasswordVariable^^}    # uppercase
-        defaultEncryptionPasswordVariable=${defaultEncryptionPasswordVariable//-/_} # - to _
-        defaultEncryptionPassword=${!defaultEncryptionPasswordVariable}
+# Check if ENCRYPTION_PASSWORD is set
+if [ -z "$ENCRYPTION_PASSWORD" ]; then
+    echo "ERROR: ENCRYPTION_PASSWORD environment variable must be set"
+    exit 1
+fi
 
-        specificEncryptionPasswordVariable=ENCRYPTION_PASSWORD_${MARINA_INSTANCE_ID}_$file
-        specificEncryptionPasswordVariable=${specificEncryptionPasswordVariable^^}    # uppercase
-        specificEncryptionPasswordVariable=${specificEncryptionPasswordVariable//-/_} # - to _
-        specificEncryptionPassword=${!specificEncryptionPasswordVariable}
+echo "Creating archive of all backup files..."
+tar -cvf /tmp/archive.tar /backup
+ls -lh /tmp/archive.tar
 
-        encryptionPasswordVariable=$defaultEncryptionPasswordVariable
-        encryptionPassword=$defaultEncryptionPassword
-
-        if [[ $specificEncryptionPassword ]]; then
-            encryptionPasswordVariable=$specificEncryptionPasswordVariable
-            encryptionPassword=$specificEncryptionPassword
-        fi
-
-        if [[ $encryptionPassword ]]; then
-            echo "Encrypting $file with password from $encryptionPasswordVariable:"
-            ls -lh "$file"
-			tar -cf "$file.tar" "$file"
-			gpg -c --cipher-algo aes256 --batch --passphrase "$encryptionPassword" -o "$file.tar.gpg" "$file.tar"
-			rm -rf "$file" "$file.tar"
-			file="$file.tar.gpg"
-        else
-            echo "Encryption is required for this backup. Set a password in $defaultEncryptionPasswordVariable or $specificEncryptionPasswordVariable"
-            exit 1
-        fi
-    fi
-done
-
-tar -cvf /backup/$MARINA_INSTANCE_ID/archive.tar /backup/$MARINA_INSTANCE_ID/*
-ls -lh /backup/$MARINA_INSTANCE_ID/archive.tar
+echo "Encrypting archive..."
+gpg -c --cipher-algo aes256 --batch --passphrase "$ENCRYPTION_PASSWORD" -o /tmp/archive.tar.gpg /tmp/archive.tar
+ls -lh /tmp/archive.tar.gpg
+rm /tmp/archive.tar
 
 # run uploads
 [ "$KEEP_MONTHLY" = 'null' ] && KEEP_MONTHLY=0
@@ -83,8 +60,7 @@ cutoffDate=$(date -d "-$keepDays days" +%s)
 cutoffDateFormatted=$(date -d "@$cutoffDate" +%Y-%m-%d)
 
 uploadDate=$(date '+%Y%m%d%H%M')
-backupFile="/backup/$MARINA_INSTANCE_ID/archive.tar"
-backupName="$MARINA_INSTANCE_ID-$uploadDate.tar"
+backupName="$MARINA_INSTANCE_ID-$uploadDate.tar.gpg"
 
 
 echo "Uploading backup..."
@@ -94,7 +70,7 @@ az storage blob upload \
     --account-name $ACCOUNT_NAME \
     --container-name $CONTAINER_NAME \
     --name $backupName \
-    --file $backupFile
+    --file /tmp/archive.tar.gpg
 
 echo "Configuring backup access tier..."
 

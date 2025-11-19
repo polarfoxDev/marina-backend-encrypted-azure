@@ -28,28 +28,14 @@ This backend is designed to work with Marina's [custom backup backend system](ht
 
 ### Required
 
-| Variable         | Description                                  |
-| ---------------- | -------------------------------------------- |
-| `ACCOUNT_KEY`    | Azure Storage Account access key             |
-| `ACCOUNT_NAME`   | Azure Storage Account name                   |
-| `CONTAINER_NAME` | Azure Blob Storage container name            |
-| `BLOB_TIER`      | Azure Blob storage tier (Hot, Cool, Archive) |
-
-### Encryption Passwords
-
-Encryption is **required** for all backups. You must set at least one of:
-
-- `ENCRYPTION_PASSWORD_{INSTANCE_ID}__` - Default password for all targets in an instance
-- `ENCRYPTION_PASSWORD_{INSTANCE_ID}_{TARGET}` - Specific password for individual targets
-
-**Note**: Instance ID and target are automatically uppercased and hyphens are converted to underscores in variable names.
-
-**Example**: For instance `cool-app` and target `my-database`:
-
-```bash
-ENCRYPTION_PASSWORD_COOL_APP__=defaultpass123
-ENCRYPTION_PASSWORD_COOL_APP_MY_DATABASE=specificpass456
-```
+| Variable              | Description                                  |
+| --------------------- | -------------------------------------------- |
+| `ACCOUNT_KEY`         | Azure Storage Account access key             |
+| `ACCOUNT_NAME`        | Azure Storage Account name                   |
+| `CONTAINER_NAME`      | Azure Blob Storage container name            |
+| `BLOB_TIER`           | Azure Blob storage tier (Hot, Cool, Archive) |
+| `MARINA_INSTANCE_ID`  | Unique identifier for the Marina instance    |
+| `ENCRYPTION_PASSWORD` | Password for GPG encryption (required)       |
 
 ### Retention Policy
 
@@ -83,8 +69,8 @@ instances:
       ACCOUNT_NAME: ${AZURE_ACCOUNT_NAME}
       CONTAINER_NAME: ${AZURE_CONTAINER_NAME}
       BLOB_TIER: Cool
-      MARINA_INSTANCE_ID: cool-app
-      ENCRYPTION_PASSWORD_COOL_APP__: ${ENCRYPTION_PASSWORD}
+      MARINA_INSTANCE_ID: my-app-prod
+      ENCRYPTION_PASSWORD: ${ENCRYPTION_PASSWORD}
       KEEP_DAYS: 7
       KEEP_MONTHLY: 6
       KEEP_YEARLY: 3
@@ -95,9 +81,9 @@ For complete Marina setup instructions, see the [Marina documentation](https://g
 ## How It Works
 
 1. **Backup Creation**: Marina creates backup files in `/backup/{timestamp}/`
-2. **Encryption**: Each target directory is tarred, then encrypted with GPG using AES-256
-3. **Archiving**: All encrypted files are bundled into a single tar archive
-4. **Upload**: Archive is uploaded to Azure Blob Storage with timestamp
+2. **Archiving**: All backup files are bundled into a single tar archive
+3. **Encryption**: The tar archive is encrypted with GPG using AES-256
+4. **Upload**: Encrypted archive is uploaded to Azure Blob Storage with timestamp
 5. **Tier Configuration**: Blob storage tier is set according to `BLOB_TIER`
 6. **Cleanup**: Old backups are deleted based on retention policy
 
@@ -128,10 +114,9 @@ The retention policy works as follows:
 
 To restore a backup:
 
-1. Download the archive from Azure Blob Storage
-2. Extract the tar archive: `tar -xvf archive.tar`
-3. Decrypt each file: `gpg -d --batch --passphrase "YOUR_PASSWORD" file.tar.gpg > file.tar`
-4. Extract the tar file: `tar -xf file.tar`
+1. Download the encrypted archive from Azure Blob Storage
+2. Decrypt the archive: `gpg -d --batch --passphrase "YOUR_PASSWORD" archive.tar.gpg > archive.tar`
+3. Extract the tar archive: `tar -xvf archive.tar`
 
 ## Troubleshooting
 
@@ -141,7 +126,7 @@ One or more required Azure configuration variables are missing.
 
 ### "Encryption is required for this backup"
 
-No encryption password is set. Define `ENCRYPTION_PASSWORD_{INSTANCE_ID}__` or a target-specific password.
+The `ENCRYPTION_PASSWORD` environment variable is not set.
 
 ## License
 
