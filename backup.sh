@@ -25,12 +25,6 @@ if [ -z "$ACCOUNT_KEY" ] || [ -z "$ACCOUNT_NAME" ] || [ -z "$CONTAINER_NAME" ] |
 	exit 1
 fi
 
-# go into the timestamped backup directory (the only one there)
-cd /backup/$(ls /backup) || {
-    echo "ERROR: Failed to change directory to the backup folder"
-    exit 1
-}
-
 echo "Starting backup process..."
 
 # Check if ENCRYPTION_PASSWORD is set

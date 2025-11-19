@@ -1,6 +1,6 @@
 instances:
   - id: azure
-    customImage: polarfoxdev/marina-backend-encrypted-azure:0.2.1
+    customImage: polarfoxdev/marina-backend-encrypted-azure:0.2.2
     schedule: "* * * * *"
     env:
       ACCOUNT_KEY: your_account_key_here
