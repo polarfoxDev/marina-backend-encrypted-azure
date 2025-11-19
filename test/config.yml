@@ -1,0 +1,14 @@
+instances:
+  - id: azure
+    customImage: polarfoxdev/marina-backend-encrypted-azure:0.2.1
+    schedule: "* * * * *"
+    env:
+      ACCOUNT_KEY: your_account_key_here
+      ACCOUNT_NAME: your_account_name_here
+      CONTAINER_NAME: your_container_name_here
+      BLOB_TIER: Cool
+      ENCRYPTION_PASSWORD: your_gpg_passphrase_here
+    targets:
+      - db: db
+      - volume: test_data
+# copy this file to .config.secret.yml and fill in the correct values for testing

@@ -45,6 +45,8 @@ This backend is designed to work with Marina's [custom backup backend system](ht
 | `KEEP_MONTHLY` | 0       | Number of months to keep first backup of each month |
 | `KEEP_YEARLY`  | 0       | Number of years to keep first backup of each year   |
 
+If all retention variables are set to `0`, no backups will be deleted.
+
 ## Usage with Marina
 
 ### 1. Build the Docker Image

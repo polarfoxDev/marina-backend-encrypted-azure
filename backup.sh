@@ -56,8 +56,13 @@ keepMonthly="${KEEP_MONTHLY:-0}"
 keepYearly="${KEEP_YEARLY:-0}"
 
 # Get the cutoff date for retention
-cutoffDate=$(date -d "-$keepDays days" +%s)
-cutoffDateFormatted=$(date -d "@$cutoffDate" +%Y-%m-%d)
+if [ "$keepDays" -gt 0 ]; then
+    cutoffDate=$(date -d "-$keepDays days" +%s)
+    cutoffDateFormatted=$(date -d "@$cutoffDate" +%Y-%m-%d)
+else
+    cutoffDate=0
+    cutoffDateFormatted="1970-01-01"
+fi
 
 uploadDate=$(date '+%Y%m%d%H%M')
 backupName="$MARINA_INSTANCE_ID-$uploadDate.tar.gpg"
